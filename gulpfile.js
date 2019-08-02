@@ -1,9 +1,3 @@
-const isDevelopment = process.env.NODE_ENV !== 'production';
-
-const config = require('yargs')
-  .boolean('optimized')
-  .default('optimized', !isDevelopment).argv;
-
 // Load Gulp and friends
 const { src, dest, watch, series } = require('gulp');
 const del = require('del');
@@ -17,11 +11,10 @@ const webpackConfig = require('./webpack.config');
 const webpackDevMiddleware = require('webpack-dev-middleware');
 const helpers = require('./lib/gulp/helpers');
 
-$.util.log('Build Mode: %s', config.optimized ? 'Optimized' : 'Development');
-
+const isProduction = process.env.NODE_ENV === 'production';
 const bundler = webpack(webpackConfig);
 
-// Individual low-level task definitions go here
+$.util.log('Build Mode: %s', isProduction ? 'Production' : 'Development');
 
 /**
  * Compile HTML
@@ -65,7 +58,7 @@ const html = function() {
         // Minify HTML
         .pipe(
           $.if(
-            config.optimized,
+            isProduction,
             $.if(
               '*.html',
               $.htmlmin({
@@ -96,7 +89,6 @@ const publicFiles = function() {
   return src('public/**/*').pipe(dest('dist'));
 };
 
-
 /**
  * Bundle scripts and styles with Webpack.
  */
@@ -120,18 +112,6 @@ const bundle = function() {
 };
 
 /**
- * Clean build directory
- */
-const clean = function() {
-  return del(['dist']);
-};
-
-/**
- * Build task.
- */
-const build = series(clean, publicFiles, bundle, html);
-
-/**
  * Serve build directory locally (development only).
  */
 const serve = function() {
@@ -145,8 +125,8 @@ const serve = function() {
     },
     middleware: [
       webpackDevMiddleware(bundler, {
-        writeToDisk: true,
         stats: 'minimal',
+        writeToDisk: true,
       }),
     ],
     plugins: ['bs-fullscreen-message'],
@@ -175,6 +155,20 @@ const serve = function() {
   watch('public/**/*', series(publicFiles, browserSync.reload));
 };
 
-exports.build = build;
-exports.serve = serve;
-exports.default = series(build, serve);
+/**
+ * Clean build directory
+ */
+const clean = function() {
+  return del(['dist']);
+};
+
+/**
+ * Build task.
+ */
+const build = series(clean, publicFiles, bundle, html);
+
+module.exports = {
+  build,
+  serve,
+  default: series(build, serve),
+};
