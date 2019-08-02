@@ -1,21 +1,44 @@
 // eslint-disable-next-line
 const webpack = require('webpack');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const path = require('path');
 
 /** @type {webpack.Configuration} */
 module.exports = {
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   entry: {
-    main: './src/js/main.js',
-    examples: './src/js/examples.js',
+    main: ['./src/js/main.js', './src/scss/main.scss'],
+    examples: ['./src/js/examples.js', './src/scss/examples.scss'],
+    menu: ['./src/js/main.js', './src/scss/menu.scss'],
   },
   output: {
-    path: path.resolve(__dirname, 'dist/js'),
+    path: path.resolve(__dirname, 'dist/assets'),
     publicPath: '/',
     filename: '[name].js',
   },
   module: {
-    rules: [{ test: /\.js$/, exclude: /node_modules/, loader: 'babel-loader' }],
+    rules: [
+      { test: /\.js$/, exclude: /node_modules/, loader: 'babel-loader' },
+      {
+        test: /\.scss$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          'postcss-loader',
+          {
+            loader: 'sass-loader',
+            options: {
+              implementation: require('sass'),
+              includePaths: [...require('ups-mixin-lib').includePaths],
+            },
+          },
+        ],
+      },
+      {
+        loader: 'webpack-modernizr-loader',
+        test: /\.modernizrrc\.js$/,
+      },
+    ],
   },
   optimization: {
     splitChunks: {
@@ -28,5 +51,16 @@ module.exports = {
       },
     },
   },
+  resolve: {
+    alias: {
+      modernizr$: path.resolve(__dirname, '.modernizrrc.js'),
+    },
+  },
+  plugins: [
+    new MiniCssExtractPlugin({
+      filename: '[name].css',
+      chunkFilename: '[id].css',
+    }),
+  ],
   devtool: process.env.NODE_ENV === 'production' ? 'source-map' : 'inline-source-map',
 };

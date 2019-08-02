@@ -5,15 +5,13 @@ const config = require('yargs')
   .default('optimized', !isDevelopment).argv;
 
 // Load Gulp and friends
-const { src, dest, watch, series, parallel } = require('gulp');
+const { src, dest, watch, series } = require('gulp');
 const del = require('del');
 const path = require('path');
 const fm = require('front-matter');
 const merge = require('merge');
 const browserSync = require('browser-sync').create('puppy-server');
 const $ = require('gulp-load-plugins')();
-const vinylMap = require('vinyl-map');
-const upbase = require('ups-mixin-lib');
 const webpack = require('webpack');
 const webpackConfig = require('./webpack.config');
 const webpackDevMiddleware = require('webpack-dev-middleware');
@@ -64,24 +62,6 @@ const html = function() {
           }),
         )
 
-        // Prevent rendering Front Matter headers found files not participating in Twig.
-        .pipe(vinylMap(code => fm(code.toString()).body))
-
-        // Minify Javascript assets when the path ends in `.min.js`.
-        .pipe(
-          $.if(
-            file => file.path.indexOf('.js') >= 0 && file.path.indexOf('.min.js') >= 0,
-            $.uglify().on('error', $.util.log),
-          ),
-        )
-
-        // Minify CSS assets when the path ends in `.min.css`.
-        .pipe(
-          $.if(file => {
-            return file.path.indexOf('.css') >= 0 && file.path.indexOf('.min.css') >= 0;
-          }, $.cleanCss({ processImport: false })),
-        )
-
         // Minify HTML
         .pipe(
           $.if(
@@ -110,64 +90,6 @@ const html = function() {
 };
 
 /**
- * Custom Modernizr build depending on feature detections used in our source scripts.
- */
-const modernizr = function() {
-  return src(['src/js/**/*.js', 'src/scss/**/*.scss'])
-    .pipe(
-      $.modernizr({
-        options: ['setClasses', 'addTest', 'html5printshiv', 'testProp', 'fnBind'],
-      }),
-    )
-    .pipe($.if(config.optimized, $.uglify()))
-    .pipe(dest('dist/js'));
-};
-
-/**
- * Compile CSS
- *
- * - write sourcemaps
- * - apply Autoprefixer
- * - inject & refresh via BrowserSync
- */
-const styles = function() {
-  const sass = function() {
-    const p = src('src/scss/**/*.scss')
-      .pipe($.sourcemaps.init())
-
-      // Compile Sass
-      .pipe(
-        $.sass({
-          outputStyle: 'nested',
-          includePaths: [upbase.includePaths],
-        }).on('error', $.sass.logError),
-      )
-
-      // Run CSS through autoprefixer
-      .pipe($.autoprefixer('last 10 version'))
-
-      // Minify compiled CSS
-      .pipe($.if(config.optimized, $.cleanCss({ processImport: false })))
-
-      // Write sourcemaps
-      .pipe($.sourcemaps.write('.'))
-
-      // Write development assets
-      .pipe(dest('dist/css'));
-
-    if (isDevelopment) {
-      p
-        // Stream generated files to BrowserSync for injection
-        // @see http://www.browsersync.io/docs/gulp/#gulp-sass-css
-        .pipe(browserSync.stream());
-    }
-    return p;
-  };
-
-  return sass();
-};
-
-/**
  * Copy public assets to build directory
  */
 const publicFiles = function() {
@@ -176,9 +98,9 @@ const publicFiles = function() {
 
 
 /**
- * Bundles scripts with Webpack
+ * Bundle scripts and styles with Webpack.
  */
-const scripts = function() {
+const bundle = function() {
   return new Promise((resolve, reject) => {
     bundler.run((err, stats) => {
       if (err) {
@@ -207,7 +129,7 @@ const clean = function() {
 /**
  * Build task.
  */
-const build = series(clean, publicFiles, parallel(modernizr, scripts, styles), html);
+const build = series(clean, publicFiles, bundle, html);
 
 /**
  * Serve build directory locally (development only).
@@ -248,10 +170,6 @@ const serve = function() {
     ['src/content/**/*.html', 'src/templates/**/*.twig', 'data/**/*.json', 'markdown/**/*.md'],
     series(html, browserSync.reload),
   );
-
-  // Trigger styles task when Sass files change. Note that browser reloading
-  // is handled directly in the `sass` task with `browserSync.stream()`
-  watch('src/scss/**/*.scss', styles);
 
   // Trigger static task when files in the public directory are changed.
   watch('public/**/*', series(publicFiles, browserSync.reload));

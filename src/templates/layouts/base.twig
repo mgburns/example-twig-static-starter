@@ -7,19 +7,16 @@
     <title>{{ current_page.title }}</title>
 
     {% block styles %}
-    <link rel="stylesheet" type="text/css" href="/css/main.css">
+    <link rel="stylesheet" type="text/css" href="/assets/main.css">
     {% endblock %}
-
-    <script type="text/javascript" src="/js/modernizr.js"></script>
-
   </head>
   <body>
 
   {% block content %}{% endblock %}
 
   {% block scripts %}
-  <script type="text/javascript" src="/js/vendor.js"></script>
-  <script type="text/javascript" src="/js/main.js"></script>
+  <script type="text/javascript" src="/assets/vendor.js"></script>
+  <script type="text/javascript" src="/assets/main.js"></script>
   {% endblock %}
   </body>
 </html>
