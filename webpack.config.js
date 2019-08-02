@@ -8,7 +8,6 @@ module.exports = {
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   entry: {
     main: ['./src/js/main.js', './src/scss/main.scss'],
-    examples: ['./src/js/examples.js', './src/scss/examples.scss'],
     menu: ['./src/js/main.js', './src/scss/menu.scss'],
   },
   output: {

@@ -116,7 +116,6 @@ const bundle = function() {
  */
 const serve = function() {
   browserSync.init({
-    logPrefix: 'Puppy',
     notify: false,
     reloadDelay: 500,
     open: false,
