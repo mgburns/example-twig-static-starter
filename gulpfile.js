@@ -4,7 +4,7 @@ const del = require('del');
 const path = require('path');
 const fm = require('front-matter');
 const merge = require('merge');
-const browserSync = require('browser-sync').create('puppy-server');
+const browserSync = require('browser-sync').create();
 const $ = require('gulp-load-plugins')();
 const webpack = require('webpack');
 const webpackConfig = require('./webpack.config');
@@ -132,7 +132,7 @@ const serve = function() {
   });
 
   // Reload browser after Webpack compilation.
-  bundler.hooks.done.tap('puppy-serve', stats => {
+  bundler.hooks.done.tap('serve', stats => {
     if (stats.hasErrors() || stats.hasWarnings()) {
       browserSync.sockets.emit('fullscreen:message', {
         title: 'Webpack Error',
