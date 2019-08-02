@@ -2,7 +2,7 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
 
 const config = require('yargs')
   .boolean('optimized')
-  .default('optimized', false).argv;
+  .default('optimized', !isDevelopment).argv;
 
 // Load Gulp and friends
 const { src, dest, watch, series, parallel } = require('gulp');
@@ -10,7 +10,7 @@ const del = require('del');
 const path = require('path');
 const fm = require('front-matter');
 const merge = require('merge');
-const browserSync = isDevelopment ? require('browser-sync').create('puppy-server') : null;
+const browserSync = require('browser-sync').create('puppy-server');
 const $ = require('gulp-load-plugins')();
 const vinylMap = require('vinyl-map');
 const upbase = require('ups-mixin-lib');
@@ -215,62 +215,56 @@ const clean = function() {
  */
 const build = series(clean, modernizr, parallel(images, fonts, scripts, styles), html);
 
+/**
+ * Serve build directory locally (development only).
+ */
+const serve = function() {
+  browserSync.init({
+    logPrefix: 'Puppy',
+    notify: false,
+    reloadDelay: 500,
+    open: false,
+    server: {
+      baseDir: 'dist',
+    },
+    middleware: [
+      webpackDevMiddleware(bundler, {
+        writeToDisk: true,
+        stats: 'minimal',
+      }),
+    ],
+    plugins: ['bs-fullscreen-message'],
+  });
+
+  // Reload browser after Webpack compilation.
+  bundler.hooks.done.tap('puppy-serve', stats => {
+    if (stats.hasErrors() || stats.hasWarnings()) {
+      browserSync.sockets.emit('fullscreen:message', {
+        title: 'Webpack Error',
+        body: stats.toString(),
+        timeout: 100000,
+      });
+      return;
+    }
+    browserSync.reload();
+  });
+
+  // Recompile templates if any content changes.
+  watch(
+    ['src/content/**/*.html', 'src/templates/**/*.twig', 'data/**/*.json', 'markdown/**/*.md'],
+    series(html, browserSync.reload),
+  );
+
+  // Trigger styles task when Sass files change. Note that browser reloading
+  // is handled directly in the `sass` task with `browserSync.stream()`
+  watch('src/static/scss/**/*.scss', styles);
+
+  // Move static images and fonts to the `dist` directory and reload when source
+  // files change
+  watch('src/static/img/**/*', series(images, browserSync.reload));
+  watch('src/static/fonts/**/*', series(fonts, browserSync.reload));
+};
+
 exports.build = build;
-exports.default = build;
-
-if (isDevelopment) {
-  /**
-   * Serve build directory locally (development only).
-   */
-  const serve = function() {
-    browserSync.init({
-      logPrefix: 'Puppy',
-      notify: false,
-      reloadDelay: 500,
-      open: false,
-      server: {
-        baseDir: 'dist',
-      },
-      middleware: [
-        webpackDevMiddleware(bundler, {
-          writeToDisk: true,
-          stats: 'minimal',
-        }),
-      ],
-      plugins: ['bs-fullscreen-message'],
-    });
-
-    // Reload browser after Webpack compilation.
-    bundler.hooks.done.tap('puppy-serve', stats => {
-      if (stats.hasErrors() || stats.hasWarnings()) {
-        browserSync.sockets.emit('fullscreen:message', {
-          title: 'Webpack Error',
-          body: stats.toString(),
-          timeout: 100000,
-        });
-        return;
-      }
-      browserSync.reload();
-    });
-
-    // Recompile templates if any content changes.
-    watch(
-      ['src/content/**/*.html', 'src/templates/**/*.twig', 'data/**/*.json', 'markdown/**/*.md'],
-      series(html, browserSync.reload),
-    );
-
-    // Trigger styles task when Sass files change. Note that browser reloading
-    // is handled directly in the `sass` task with `browserSync.stream()`
-    watch('src/static/scss/**/*.scss', styles);
-
-    // Move static images and fonts to the `dist` directory and reload when source
-    // files change
-    watch('src/static/img/**/*', series(images, browserSync.reload));
-    watch('src/static/fonts/**/*', series(fonts, browserSync.reload));
-  };
-
-  const buildAndServe = series(build, serve);
-
-  exports.serve = serve;
-  exports.default = buildAndServe;
-}
+exports.serve = serve;
+exports.default = series(build, serve);
