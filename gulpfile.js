@@ -12,15 +12,16 @@ const fm = require('front-matter');
 const merge = require('merge');
 const browserSync = isDevelopment ? require('browser-sync').create('puppy-server') : null;
 const $ = require('gulp-load-plugins')();
-const helpers = require('./lib/gulp/helpers');
 const vinylMap = require('vinyl-map');
-const source = require('vinyl-source-stream');
-const buffer = require('vinyl-buffer');
-const browserify = require('browserify');
-const babelify = require('babelify');
 const upbase = require('ups-mixin-lib');
+const webpack = require('webpack');
+const webpackConfig = require('./webpack.config');
+const webpackDevMiddleware = require('webpack-dev-middleware');
+const helpers = require('./lib/gulp/helpers');
 
 $.util.log('Build Mode: %s', config.optimized ? 'Optimized' : 'Development');
+
+const bundler = webpack(webpackConfig);
 
 // Individual low-level task definitions go here
 
@@ -181,32 +182,25 @@ const fonts = function() {
 };
 
 /**
- * Bundles scripts with Browserify and Babel
+ * Bundles scripts with Webpack
  */
 const scripts = function() {
-  const babel = babelify.configure({
-    sourceMaps: true,
-    presets: ['@babel/preset-env'],
+  return new Promise((resolve, reject) => {
+    bundler.run((err, stats) => {
+      if (err) {
+        reject(err);
+      } else {
+        // eslint-disable-next-line
+        console.log(
+          stats.toString({
+            chunks: false,
+            colors: true,
+          }),
+        );
+        resolve();
+      }
+    });
   });
-
-  const browse = browserify({
-    entries: './src/static/js/main.js',
-    debug: true,
-    transform: [babel],
-  });
-
-  return browse
-    .bundle()
-    .on('error', function(err) {
-      $.util.log(err.message);
-      this.emit('end');
-    })
-    .pipe(source('main.js'))
-    .pipe(buffer())
-    .pipe($.sourcemaps.init({ loadMaps: true }))
-    .pipe($.if(config.optimized, $.uglify()))
-    .pipe($.sourcemaps.write('./'))
-    .pipe(dest('dist/static/js/'));
 };
 
 /**
@@ -237,9 +231,29 @@ if (isDevelopment) {
       server: {
         baseDir: 'dist',
       },
+      middleware: [
+        webpackDevMiddleware(bundler, {
+          writeToDisk: true,
+          stats: 'minimal',
+        }),
+      ],
+      plugins: ['bs-fullscreen-message'],
     });
 
-    // Recompile templates if any HTML, Twig or scripts change
+    // Reload browser after Webpack compilation.
+    bundler.hooks.done.tap('puppy-serve', stats => {
+      if (stats.hasErrors() || stats.hasWarnings()) {
+        browserSync.sockets.emit('fullscreen:message', {
+          title: 'Webpack Error',
+          body: stats.toString(),
+          timeout: 100000,
+        });
+        return;
+      }
+      browserSync.reload();
+    });
+
+    // Recompile templates if any content changes.
     watch(
       ['src/content/**/*.html', 'src/templates/**/*.twig', 'data/**/*.json', 'markdown/**/*.md'],
       series(html, browserSync.reload),
@@ -251,7 +265,6 @@ if (isDevelopment) {
 
     // Move static images and fonts to the `dist` directory and reload when source
     // files change
-    watch('src/static/js/**/*.js', series(scripts, browserSync.reload));
     watch('src/static/img/**/*', series(images, browserSync.reload));
     watch('src/static/fonts/**/*', series(fonts, browserSync.reload));
   };
