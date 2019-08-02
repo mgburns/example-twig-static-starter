@@ -8,8 +8,9 @@
   "scripts": {
     "generate": "node lib/factories/generate.js",
     "g": "node lib/factories/generate.js",
-    "start": "node index.js",
-    "postinstall": "if [ \"$NODE_ENV\" = \"production\" ]; then gulp puppy-build --optimized; else gulp puppy-build; fi"
+    "build": "gulp build",
+    "start": "gulp",
+    "serve": "node index.js"
   },
   "dependencies": {
     "jquery": "^3.3.1",
