@@ -6,11 +6,11 @@ const path = require('path');
 module.exports = {
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   entry: {
-    main: './src/static/js/main.js',
-    examples: './src/static/js/examples.js',
+    main: './src/js/main.js',
+    examples: './src/js/examples.js',
   },
   output: {
-    path: path.resolve(__dirname, 'dist/static/js'),
+    path: path.resolve(__dirname, 'dist/js'),
     publicPath: '/',
     filename: '[name].js',
   },

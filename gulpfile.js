@@ -113,14 +113,14 @@ const html = function() {
  * Custom Modernizr build depending on feature detections used in our source scripts.
  */
 const modernizr = function() {
-  return src(['src/static/js/**/*.js', 'src/static/scss/**/*.scss'])
+  return src(['src/js/**/*.js', 'src/scss/**/*.scss'])
     .pipe(
       $.modernizr({
         options: ['setClasses', 'addTest', 'html5printshiv', 'testProp', 'fnBind'],
       }),
     )
     .pipe($.if(config.optimized, $.uglify()))
-    .pipe(dest('dist/static/js'));
+    .pipe(dest('dist/js'));
 };
 
 /**
@@ -132,7 +132,7 @@ const modernizr = function() {
  */
 const styles = function() {
   const sass = function() {
-    const p = src('src/static/scss/**/*.scss')
+    const p = src('src/scss/**/*.scss')
       .pipe($.sourcemaps.init())
 
       // Compile Sass
@@ -153,7 +153,7 @@ const styles = function() {
       .pipe($.sourcemaps.write('.'))
 
       // Write development assets
-      .pipe(dest('dist/static/css'));
+      .pipe(dest('dist/css'));
 
     if (isDevelopment) {
       p
@@ -168,18 +168,12 @@ const styles = function() {
 };
 
 /**
- * Pipe static image assets to build directory
+ * Copy public assets to build directory
  */
-const images = function() {
-  return src('src/static/img/**/*').pipe(dest('dist/static/img'));
+const publicFiles = function() {
+  return src('public/**/*').pipe(dest('dist'));
 };
 
-/**
- * Pipe static font assets to build directory
- */
-const fonts = function() {
-  return src('src/static/fonts/**/*').pipe(dest('dist/static/fonts'));
-};
 
 /**
  * Bundles scripts with Webpack
@@ -213,7 +207,7 @@ const clean = function() {
 /**
  * Build task.
  */
-const build = series(clean, modernizr, parallel(images, fonts, scripts, styles), html);
+const build = series(clean, publicFiles, parallel(modernizr, scripts, styles), html);
 
 /**
  * Serve build directory locally (development only).
@@ -257,12 +251,10 @@ const serve = function() {
 
   // Trigger styles task when Sass files change. Note that browser reloading
   // is handled directly in the `sass` task with `browserSync.stream()`
-  watch('src/static/scss/**/*.scss', styles);
+  watch('src/scss/**/*.scss', styles);
 
-  // Move static images and fonts to the `dist` directory and reload when source
-  // files change
-  watch('src/static/img/**/*', series(images, browserSync.reload));
-  watch('src/static/fonts/**/*', series(fonts, browserSync.reload));
+  // Trigger static task when files in the public directory are changed.
+  watch('public/**/*', series(publicFiles, browserSync.reload));
 };
 
 exports.build = build;
