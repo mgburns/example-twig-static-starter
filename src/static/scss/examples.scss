@@ -1,0 +1,79 @@
+// Import Upbase
+@import 'upbase';
+
+* {
+  color: #444;
+  font-family: 'Source Sans Pro';
+  font-weight: normal;
+  box-sizing: border-box;
+}
+
+.grid {
+  margin-bottom: 50px;
+}
+
+.ui-item,
+.grid > div {
+  margin-bottom: 10px;
+}
+
+.grid > div > div {
+  background-color: #bada55;
+  color: darken(#bada55, 25%);
+  min-height: 100px;
+  padding: 10px;
+}
+
+.grid-3 {
+  @include grid(3);
+}
+
+// Additional Markdown elements
+
+a {
+  color: blue;
+}
+
+strong {
+  font-weight: 700;
+}
+
+code {
+  padding: 0.2em;
+  margin: 0;
+  font-family: 'Courier New', Courier, monospace, sans-serif;
+  font-size: 100%;
+  text-align: left;
+  color: #555577;
+  background-color: rgba(0, 0, 0, 0.04);
+  font-size: 85%;
+
+  &:before,
+  &:after {
+    letter-spacing: -0.2em;
+  }
+}
+
+pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background-color: #f7f7f7;
+  border-radius: 3px;
+
+  &:before,
+  &:after {
+    content: normal;
+  }
+
+  & > code {
+    padding: 0;
+    margin: 0;
+    font-size: 100%;
+    word-break: normal;
+    white-space: pre;
+    background: transparent;
+    border: 0;
+  }
+}

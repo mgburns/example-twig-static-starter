@@ -1,0 +1,13 @@
+---
+title: gulp 4
+---
+{% extends "layouts/menu.twig" %}
+
+{% block content %}
+<h3 class="up-browser-h">Reading List</h3>
+<ul class="up-browser-list">
+{% for page in sitemap|flatten if not page.exclude and page.menu %}
+  <li><a href="{{ page.path }}">{{ page.title }}</a></li>
+{% endfor %}
+</ul>
+{% endblock %}

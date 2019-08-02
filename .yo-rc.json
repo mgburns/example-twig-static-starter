@@ -1,0 +1,20 @@
+{
+  "generator-puppy": {
+    "projectName": "gulp 4",
+    "projectDesc": "",
+    "features": [
+      "includeUpbase",
+      "includeJQuery",
+      "includeModernizr",
+      "includeLinting",
+      "includeFactories"
+    ],
+    "includeAuth": true,
+    "includeIndex": true,
+    "includeSampleData": true,
+    "includeFactories": true,
+    "includeLinting": true,
+    "runDate": "2019-08-02T00:38:26.453Z",
+    "runVersion": "0.7.0"
+  }
+}
