@@ -50,7 +50,7 @@
     "require-dir": "^1.2.0",
     "sass": "^1.22.9",
     "sass-loader": "^7.1.0",
-    "showdown": "^1.4.1",
+    "showdown": "^1.9.1",
     "webpack": "^4.39.0",
     "webpack-dev-middleware": "^3.7.0",
     "webpack-modernizr-loader": "^5.0.0"
